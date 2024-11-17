@@ -1,24 +1,65 @@
 import { useSelector } from "react-redux"
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import toast, { Toaster } from 'react-hot-toast';
+import axios from "axios";
+
+
 
 export default function Profile() {
-  const {currentUser}=useSelector(state=>state.user);
-  const fileRef = useRef(null);
+  const { currentUser } = useSelector(state => state.user);
+  const [file, setFile] = useState(undefined)
+  const [uploaded, setUploaded] = useState(false);
+  const imgRef = useRef(null);
+  const [imgLink, setImgLink] = useState(currentUser.avatar)
+
+  const handleUpload = (e) => {
+    try {
+      setFile(e.target.files[0]); // Setting the file state
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+  useEffect(() => {
+    const uploadFile = async () => {
+      if (file && !uploaded) {
+        try {
+          const data = new FormData();
+          data.append("my_file", file);
+          const res = await axios.post(
+            `http://localhost:3000/upload-profile`,
+            data
+          );
+          let url = res.data.fileUrl;
+          setImgLink(url)
+          toast.success("Uploaded 👍");
+          setUploaded(true);
+
+        } catch (error) {
+          console.error(error);
+          toast.error("Failed to upload file");
+        }
+      }
+    };
+
+    uploadFile(); // Call the async upload function
+  }, [file])
+
   return (
     <div className="p-3 max-w-lg  mx-auto ">
-    <h1 className='text-3xl font-semibold text-center my-7'>Profile</h1>
-    <form className="flex flex-col gap-4">
-      <input type="file" ref={fileRef} hidden accept="image/*"/>
-      <img onClick={()=>fileRef.current.click()} src={currentUser.avatar} alt="profile" className="rounded-full h-24 w-24 object-cover cursor-pointer self-center mt-2" />
-      <input type="text" placeholder="username"id="username" className="mt-3 border p-3 rounded-lg"/>
-      <input type="email" placeholder="email"id="email" className="mt-3 border p-3 rounded-lg"/>
-      <input type="password" placeholder="password"id="password" className="mt-3 border p-3 rounded-lg"/>
-      <button className="bg-slate-700 rounded-lg text-white p-3 uppercase hover:opacity-70">update</button>
-    </form>
-    <div className="flex justify-between mt-5">
-      <span className="text-red-700 cursor-pointer">Delete Account</span>
-      <span className="text-red-700 cursor-pointer">Sign out</span>
-    </div>
+      <Toaster />
+      <h1 className='text-3xl font-semibold text-center my-7'>Profile</h1>
+      <form className="flex flex-col gap-4">
+        <input type="file" ref={imgRef} hidden accept="image/*" onChange={handleUpload} />
+        <img onClick={() => imgRef.current.click()} src={imgLink} alt="profile" className="rounded-full h-24 w-24 object-cover cursor-pointer self-center mt-2" />
+        <input type="text" placeholder="username" id="username" className="mt-3 border p-3 rounded-lg" />
+        <input type="email" placeholder="email" id="email" className="mt-3 border p-3 rounded-lg" />
+        <input type="password" placeholder="password" id="password" className="mt-3 border p-3 rounded-lg" />
+        <button className="bg-slate-700 rounded-lg text-white p-3 uppercase hover:opacity-70">update</button>
+      </form>
+      <div className="flex justify-between mt-5">
+        <span className="text-red-700 cursor-pointer">Delete Account</span>
+        <span className="text-red-700 cursor-pointer">Sign out</span>
+      </div>
     </div>
   )
 }
